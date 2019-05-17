@@ -10,6 +10,7 @@ import tensorflow.contrib.slim as slim
 from datetime import datetime
 from util.util import *
 
+
 class DEBLUR(object):
     def __init__(self, args):
         self.args = args
@@ -33,7 +34,6 @@ class DEBLUR(object):
 
         self.batch_size = args.batch_size
         self.epoch = args.epoch
-        self.data_num = len(self.data_list)
         self.data_size = (self.data_num) // self.batch_size
         self.max_steps = int(self.epoch * self.data_size)
         self.learning_rate = args.learning_rate
@@ -41,6 +41,7 @@ class DEBLUR(object):
         self.loss_thread = 0.004
         self.min_loss_val = 1
         self.epoch_loss = 0
+        self.step_loss_queue = []
 
     def input_producer(self, batch_size=10):
         def read_data():
@@ -242,7 +243,7 @@ class DEBLUR(object):
         tf.summary.image('edge_out_', im2uint8(ed))
         tf.summary.scalar('loss_l1', l1_loss)
         tf.summary.scalar('loss_edge', ed_loss)
-
+        self.epoch_loss = tf.reduce_mean(self.step_loss_queue)
         # losses
         tf.summary.scalar('loss_total', self.loss_total)
         tf.summary.scalar('epoch_loss', self.epoch_loss)
@@ -319,20 +320,17 @@ class DEBLUR(object):
             # print loss_value
             assert not np.isnan(
                 loss_total_val), 'Model diverged with loss = NaN'
-
-            self.epoch_loss += loss_total_val
-
             if step % 5 == 0:
                 num_examples_per_step = self.batch_size
                 examples_per_sec = num_examples_per_step / duration
                 sec_per_batch = float(duration)
 
                 format_str = (
-                    '%s: step %d, loss = (%.5f; %.5f)(%.1f data/s; %.3f s/bch)')
+                    '%s: step %d, loss = (%.5f;)(%.1f data/s; %.3f s/bch)')
                 print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step,
-                                    loss_total_val, self.epoch_loss, examples_per_sec, sec_per_batch))
-
-            if step % self.data_num == 0:
+                                    loss_total_val, examples_per_sec, sec_per_batch))
+            self.step_loss_queue.append(loss_total_val)
+            if step % self.data_size == 0:
                 # summary_str = sess.run(summary_op, feed_dict={inputs:batch_input, gt:batch_gt})
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, global_step=step)
