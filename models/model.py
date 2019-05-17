@@ -43,11 +43,11 @@ class DEBLUR(object):
 
     def input_producer(self, batch_size=10):
         def read_data():
-            img_a = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/lst/data/GOPRO_Large/train/', self.data_queue[0]])),
+            img_a = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/data/GOPRO_Large/train/', self.data_queue[0]])),
                                           channels=3)
-            img_b = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/lst/data/GOPRO_Large/train/', self.data_queue[1]])),
+            img_b = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/data/GOPRO_Large/train/', self.data_queue[1]])),
                                           channels=3)
-            img_c = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/lst/data/GOPRO_Large/train/', self.data_queue[2]])),
+            img_c = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/data/GOPRO_Large/train/', self.data_queue[2]])),
                                           channels=3)
             img_a, img_b, img_c = preprocessing([img_a, img_b, img_c])
 
