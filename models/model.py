@@ -221,7 +221,6 @@ class DEBLUR(object):
         gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
         l1_loss = tf.reduce_mean((gt_i - pred) ** 2) * 10
         self.l1_loss = l1_loss
-        self.loss_total += per_loss
         self.loss_total += l1_loss
 
         #_, hi, wi, _ = ed.get_shape().as_list
@@ -295,7 +294,7 @@ class DEBLUR(object):
         self.sess = sess
         sess.run(tf.group(tf.global_variables_initializer(),
                           tf.local_variables_initializer()))
-                          
+
         self.saver = tf.train.Saver(
             max_to_keep=50, keep_checkpoint_every_n_hours=1)
         coord = tf.train.Coordinator()
