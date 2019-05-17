@@ -305,7 +305,7 @@ class DEBLUR(object):
         summary_writer = tf.summary.FileWriter(
             self.train_dir, sess.graph, flush_secs=30)
 
-        self.load(sess, self.restore_dir, step=self.restore_step)
+        #self.load(sess, self.restore_dir, step=self.restore_step)
 
         for step in xrange(sess.run(global_step), self.max_steps + 1):
 
