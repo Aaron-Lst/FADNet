@@ -34,7 +34,7 @@ class DEBLUR(object):
 
         self.batch_size = args.batch_size
         self.epoch = args.epoch
-        self.data_size = (self.data_num) // self.batch_size
+        self.data_size = (len(self.data_list)) // self.batch_size
         self.max_steps = int(self.epoch * self.data_size)
         self.learning_rate = args.learning_rate
         self.load_step = args.load_step
