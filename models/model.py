@@ -274,7 +274,7 @@ class DEBLUR(object):
             return train_op
 
         global_step = tf.Variable(
-            initial_value=self.restore_step, dtype=tf.int32, trainable=False)
+            initial_value=0, dtype=tf.int32, trainable=False)
         self.global_step = global_step
 
         # build model
