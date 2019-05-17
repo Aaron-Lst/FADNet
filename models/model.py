@@ -33,7 +33,8 @@ class DEBLUR(object):
 
         self.batch_size = args.batch_size
         self.epoch = args.epoch
-        self.data_size = (len(self.data_list)) // self.batch_size
+        self.data_num = len(self.data_list)
+        self.data_size = (self.data_num) // self.batch_size
         self.max_steps = int(self.epoch * self.data_size)
         self.learning_rate = args.learning_rate
         self.load_step = args.load_step
@@ -331,7 +332,7 @@ class DEBLUR(object):
                 print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step,
                                     loss_total_val, self.epoch_loss, examples_per_sec, sec_per_batch))
 
-            if step % self.data_list == 0:
+            if step % self.data_num == 0:
                 # summary_str = sess.run(summary_op, feed_dict={inputs:batch_input, gt:batch_gt})
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, global_step=step)
