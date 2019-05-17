@@ -1,6 +1,6 @@
 import os
 
-input_path = '/home/opt603/lst/data/GOPRO_Large/train'
+input_path = '/home/opt603/data/GOPRO_Large/train'
 
 filesName = sorted(os.listdir(input_path))
 
