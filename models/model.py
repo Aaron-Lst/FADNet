@@ -243,7 +243,6 @@ class DEBLUR(object):
         tf.summary.image('edge_out_', im2uint8(ed))
         tf.summary.scalar('loss_l1', l1_loss)
         tf.summary.scalar('loss_edge', ed_loss)
-        self.epoch_loss = tf.reduce_mean(self.step_loss_queue)
         # losses
         tf.summary.scalar('loss_total', self.loss_total)
         tf.summary.scalar('epoch_loss', self.epoch_loss)
@@ -329,8 +328,9 @@ class DEBLUR(object):
                     '%s: step %d, loss = (%.5f;)(%.1f data/s; %.3f s/bch)')
                 print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step,
                                     loss_total_val, examples_per_sec, sec_per_batch))
-            self.step_loss_queue.append(loss_total_val)
+            self.epoch_loss+=loss_total_val
             if step % self.data_size == 0:
+                self.epoch_loss/=self.data_size
                 # summary_str = sess.run(summary_op, feed_dict={inputs:batch_input, gt:batch_gt})
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, global_step=step)
