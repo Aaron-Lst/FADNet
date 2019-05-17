@@ -41,6 +41,7 @@ class DEBLUR(object):
         self.load_step = args.load_step
         self.loss_thread = 0.004
         self.min_loss_val = 1
+        self.epoch_loss = 0
 
     def input_producer(self, batch_size=10):
         def read_data():
@@ -249,6 +250,7 @@ class DEBLUR(object):
 
         # losses
         tf.summary.scalar('loss_total', self.loss_total)
+        tf.summary.scalar('epoch_loss', self.epoch_loss)
 
         # training vars
         # all_vars = tf.trainable_variables()
@@ -352,7 +354,7 @@ class DEBLUR(object):
             self.train_dir, sess.graph, flush_secs=30)
 
         self.load(sess, self.restore_dir, step=self.restore_step)
-        
+
         for step in xrange(sess.run(global_step), self.max_steps + 1):
 
             start_time = time.time()
@@ -365,20 +367,23 @@ class DEBLUR(object):
             assert not np.isnan(
                 loss_total_val), 'Model diverged with loss = NaN'
 
+            self.epoch_loss += loss_total_val
+
             if step % 5 == 0:
                 num_examples_per_step = self.batch_size
                 examples_per_sec = num_examples_per_step / duration
                 sec_per_batch = float(duration)
 
                 format_str = (
-                    '%s: step %d, loss = (%.5f; %.5f, %.5f)(%.1f data/s; %.3f s/bch)')
-                print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step, loss_total_val, 0.0,
-                                    0.0, examples_per_sec, sec_per_batch))
+                    '%s: step %d, loss = (%.5f; %.5f)(%.1f data/s; %.3f s/bch)')
+                print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step,
+                                    loss_total_val, self.epoch_loss, examples_per_sec, sec_per_batch))
 
-            if step % 20 == 0:
+            if step % self.data_list == 0:
                 # summary_str = sess.run(summary_op, feed_dict={inputs:batch_input, gt:batch_gt})
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, global_step=step)
+                self.epoch_loss = 0
 
             # Save the model checkpoint periodically.
             if step > self.max_steps/2:
