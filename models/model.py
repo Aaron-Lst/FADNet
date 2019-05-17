@@ -9,8 +9,6 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from datetime import datetime
 from util.util import *
-import util.vgg_simple as vgg
-
 
 class DEBLUR(object):
     def __init__(self, args):
@@ -221,10 +219,8 @@ class DEBLUR(object):
         self.loss_total = 0
         _, hi, wi, _ = pred.get_shape().as_list()
         gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
-        per_loss = self.build_perceptual_loss(pred, gt_i) * 0.01
         l1_loss = tf.reduce_mean((gt_i - pred) ** 2) * 10
         self.l1_loss = l1_loss
-        self.per_loss = per_loss
         self.loss_total += per_loss
         self.loss_total += l1_loss
 
@@ -244,7 +240,6 @@ class DEBLUR(object):
 
         tf.summary.image('out_', im2uint8(pred))
         tf.summary.image('edge_out_', im2uint8(ed))
-        tf.summary.scalar('loss_per', per_loss)
         tf.summary.scalar('loss_l1', l1_loss)
         tf.summary.scalar('loss_edge', ed_loss)
 
@@ -258,38 +253,6 @@ class DEBLUR(object):
         self.all_vars = all_vars
         for var in all_vars:
             print(var.name)
-
-    def build_perceptual_loss(self, gen_img, imgs):
-        def styleloss(f1, f2, f3, f4):
-            gen_f, _, style_f = tf.split(f1, 3, 0)
-            size = tf.size(gen_f)
-            style_loss = tf.nn.l2_loss(
-                gram(gen_f) - gram(style_f))*2 / tf.to_float(size)
-
-            gen_f, _, style_f = tf.split(f2, 3, 0)
-            size = tf.size(gen_f)
-            style_loss += tf.nn.l2_loss(gram(gen_f) -
-                                        gram(style_f)) * 2 / tf.to_float(size)
-
-            gen_f, _, style_f = tf.split(f3, 3, 0)
-            size = tf.size(gen_f)
-            style_loss += tf.nn.l2_loss(gram(gen_f) -
-                                        gram(style_f)) * 2 / tf.to_float(size)
-
-            gen_f, _, style_f = tf.split(f4, 3, 0)
-            size = tf.size(gen_f)
-            style_loss += tf.nn.l2_loss(gram(gen_f) -
-                                        gram(style_f)) * 2 / tf.to_float(size)
-
-            return style_loss
-        with slim.arg_scope(vgg.vgg_arg_scope()):
-            f1, f2, f3, f4, exclude = vgg.vgg_16(
-                tf.concat([gen_img, imgs], axis=0))
-            gen_f, img_f = tf.split(f3, 2, 0)
-            content_loss = tf.nn.l2_loss(
-                gen_f - img_f) / tf.to_float(tf.size(gen_f))
-
-            return content_loss
 
     def train(self):
         def get_optimizer(loss, global_step=None, var_list=None, is_gradient_clip=False):
@@ -332,17 +295,7 @@ class DEBLUR(object):
         self.sess = sess
         sess.run(tf.group(tf.global_variables_initializer(),
                           tf.local_variables_initializer()))
-        # load vgg model
-        vgg_model_path = '/home/opt603/Downloads/vgg_16.ckpt'
-        exclude = ['vgg_16/fc6', 'vgg_16/pool4', 'vgg_16/conv5', 'vgg_16/pool5',
-                   'vgg_16/fc7', 'vgg_16/global_pool', 'vgg_16/fc8/squeezed', 'vgg_16/fc8']
-        vgg_vars = slim.get_variables_to_restore(
-            include=['vgg_16'], exclude=exclude)
-        # vgg_init_var = slim.get_variables_to_restore(include=['vgg_16/fc6'])
-        init_fn = slim.assign_from_checkpoint_fn(vgg_model_path, vgg_vars)
-        init_fn(self.sess)
-        # tf.initialize_variables(var_list=vgg_init_var)
-        print('vgg s weights load done')
+                          
         self.saver = tf.train.Saver(
             max_to_keep=50, keep_checkpoint_every_n_hours=1)
         coord = tf.train.Coordinator()
