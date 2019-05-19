@@ -1,5 +1,6 @@
-# FADNet
-Flowing Attention Deblurring Network
+# FADNet: Flowing Attention Deblurring Network
 
-tensorflow1.8.0
-python3.6
+
+##Requirments
+-Python3.6
+-Tensorflow-gpu=1.8.0
