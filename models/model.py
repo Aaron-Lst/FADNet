@@ -82,11 +82,11 @@ class DEBLUR(object):
     def generator(self, inputs, reuse=False, scope='refine'):
         with tf.variable_scope(scope, reuse=reuse) as vs:
             pred, refine, ed = self.model_refine(inputs, scope)
-            variables = tf.contrib.framework.get_variables(vs)
-            return pred, refine, ed, variables
+            return pred, refine, ed
 
     def model_refine(self, inputs, name):
         refine = []
+        edge = []
         bn_params = batch_norm_params()
         with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
                             activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=None,
@@ -126,84 +126,144 @@ class DEBLUR(object):
             conv4_2 = ResnetBlock(conv4_1, 256, 5, scope='enc4_2')
             conv4_3 = ResnetBlock(conv4_2, 256, 5, scope='enc4_3')
             conv4_4 = ResnetBlock(conv4_3, 256, 5, scope='enc4_4')
-            temp_1 = slim.conv2d(conv4_4, 64, [1, 1])
-            refine1_1 = slim.conv2d(
-                temp_1, self.chns, [5, 5], stride=1, activation_fn=None, reuse=None, scope='pred_')
-            upsample_shape = tf.shape(refine1_1)
-            refine1_2 = tf.image.resize_nearest_neighbor(
-                refine1_1, [upsample_shape[1]*2, upsample_shape[2]*2])
-            refine1_2 = slim.conv2d(
-                refine1_2, 128, [1, 1], scope='refine1_2')
-            refine.append(refine1_1)
-
             deconv3_4 = slim.conv2d_transpose(
                 conv4_4, 128, [4, 4], stride=2, scope='dec3_4')
             cat3 = deconv3_4 + conv3_4
 
-            # decoder
+            # decoder3
             deconv3_3 = ResnetBlock(cat3, 128, 5,   scope='dec3_3')
             deconv3_2 = ResnetBlock(deconv3_3, 128, 5, scope='dec3_2')
             deconv3_1 = ResnetBlock(deconv3_2, 128, 5, scope='dec3_1')
 
-            refine2_0 = tf.concat(
-                [deconv3_1, refine1_2], axis=3, name='refine2_0')
-            temp_2 = slim.conv2d(refine2_0, 64, [1, 1])
-            refine2_1 = slim.conv2d(
-                temp_2, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
-            upsample_shape = tf.shape(refine2_1)
-            refine2_2 = tf.image.resize_nearest_neighbor(
-                refine1_1, [upsample_shape[1]*2, upsample_shape[2]*2])
-            refine2_2 = slim.conv2d(
-                refine2_2, 64, [1, 1], scope='refine2_2')
-            refine.append(refine2_1)
+            # refine1
+            refine1_0 = slim.conv2d(cat3, 64, [1, 1])
+            refine1_1 = slim.conv2d(
+                refine1_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=None, scope='pred_')
+            refine1_2 = slim.conv2d(
+                refine1_1, 128, [1, 1], scope='refine1_2')
+            refine.append(refine1_1)
+
+            # edge1
+            edge1_0 = slim.conv2d(cat3, 64, [1, 1])
+            edge1_1 = slim.conv2d(
+                edge1_0, 1, [5, 5], stride=1, activation_fn=None, reuse=None, scope='edpred_')
+            edge1_2 = slim.conv2d(
+                edge1_1, 128, [1, 1], scope='edge1_2')
+            edge.append(edge1_1)
+
+            # flow_attention1
+            flow_attention1 = self.flowing_attention(
+                deconv3_1, refine1_2, edge1_2)
 
             deconv2_4 = slim.conv2d_transpose(
-                refine2_0, 64, [4, 4], stride=2, scope='dec2_4')
+                flow_attention1, 64, [4, 4], stride=2, scope='dec2_4')
             cat2 = deconv2_4 + conv2_4
+
+            # decoder2
             deconv2_3 = ResnetBlock(cat2, 64, 5, scope='dec2_3')
             deconv2_2 = ResnetBlock(deconv2_3, 64, 5, scope='dec2_2')
             deconv2_1 = ResnetBlock(deconv2_2, 64, 5, scope='dec2_1')
 
-            refine3_0 = tf.concat(
-                [deconv2_1, refine2_2], axis=3, name='refine3_0')
-            temp_3 = slim.conv2d(refine3_0, 64, [1, 1])
-            refine3_1 = slim.conv2d(
-                temp_3, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
-            upsample_shape = tf.shape(refine3_1)
-            refine3_2 = tf.image.resize_nearest_neighbor(
-                refine3_1, [upsample_shape[1]*2, upsample_shape[2]*2])
-            refine3_2 = slim.conv2d(
-                refine3_2, 32, [1, 1], scope='refine3_2')
-            refine.append(refine3_1)
+            # refine2
+            refine2_0 = slim.conv2d(cat2, 64, [1, 1])
+            refine2_1 = slim.conv2d(
+                refine2_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
+            refine2_2 = slim.conv2d(
+                refine2_1, 64, [1, 1], scope='refine2_2')
+            refine.append(refine2_1)
+
+            # edge2
+            edge2_0 = slim.conv2d(cat2, 64, [1, 1])
+            edge2_1 = slim.conv2d(
+                edge2_0, 1, [5, 5], stride=1, activation_fn=None, reuse=True, scope='edpred_')
+            edge2_2 = slim.conv2d(
+                edge2_1, 64, [1, 1], scope='edge2_2')
+            edge.append(edge2_1)
+
+            # flow_attention2
+            flow_attention2 = self.flowing_attention(
+                deconv2_1, refine2_2, edge2_2)
 
             deconv1_4 = slim.conv2d_transpose(
                 refine3_0, 32, [4, 4], stride=2, scope='dec1_4')
             cat1 = deconv1_4 + conv1_4
+
+            # decoder1
             deconv1_3 = ResnetBlock(cat1, 32, 5, scope='dec1_3')
             deconv1_2 = ResnetBlock(deconv1_3, 32, 5, scope='dec1_2')
             deconv1_1 = ResnetBlock(deconv1_2, 32, 5, scope='dec1_1')
 
-            refine4_0 = tf.concat(
-                [deconv1_1, refine3_2], axis=3, name='refine4_0')
+            # refine3
+            refine3_0 = slim.conv2d(cat1, 64, [1, 1])
+            refine3_1 = slim.conv2d(
+                refine3_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
+            refine3_2 = slim.conv2d(
+                refine3_1, 64, [1, 1], scope='refine3_2')
+            refine.append(refine3_1)
 
-            inp_pred = slim.conv2d(refine4_0, self.chns, [
+            # edge3
+            edge3_0 = slim.conv2d(cat1, 64, [1, 1])
+            edge3_1 = slim.conv2d(
+                edge3_0, 1, [5, 5], stride=1, activation_fn=None, reuse=True, scope='edpred_')
+            edge3_2 = slim.conv2d(
+                edge3_1, 64, [1, 1], scope='edge3_2')
+            edge.append(edge3_1)
+
+            # flow_attention3
+            flow_attention3 = self.flowing_attention(
+                deconv3_1, refine3_2, edge3_2)
+
+            inp_pred = slim.conv2d(flow_attention3, self.chns, [
                 5, 5], activation_fn=None, reuse=True, scope='pred_')
 
-            # edge prediction
-            upsample_shape = tf.shape(deconv3_1)
-            upsample_deconv3 = tf.image.resize_nearest_neighbor(
-                deconv3_1, [upsample_shape[1]*4, upsample_shape[2]*4])
-            upsample_deconv2 = tf.image.resize_nearest_neighbor(
-                deconv2_1, [upsample_shape[1]*4, upsample_shape[2]*4])
-            upsample_deconv1 = deconv1_1
+        return inp_pred, refine, edge
 
-            edge_feature = tf.concat(
-                [upsample_deconv3, upsample_deconv2, upsample_deconv1], axis=3, name='edge_feature')
+    def flowing_attention(self, middle_fea, up_fea, down_fea, dim):
+        with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
+                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=None,
+                            weights_initializer=tf.contrib.layers.xavier_initializer(
+                uniform=True),
+                biases_initializer=tf.constant_initializer(0.0)):
 
-            ed = slim.conv2d(edge_feature, 1, [
-                1, 1], activation_fn=None, reuse=False, scope='edge')
+        def channel_attention(input_x, out_dim, ratio, layer_name):
+        with tf.name_scope(layer_name):
 
-        return inp_pred, refine, ed
+            squeeze = global_avg_pool(input_x, name='Global_avg_pooling')
+
+            excitation = tf.layers.dense(
+                squeeze, units=out_dim / ratio, layer_name=layer_name+'_fully_connected1')
+            excitation = tf.nn.relu(excitation)
+            excitation = tf.layers.dense(
+                excitation, units=out_dim, layer_name=layer_name+'_fully_connected2')
+            excitation = tf.nn.sigmoid(excitation)
+
+            excitation = tf.reshape(excitation, [-1, 1, 1, out_dim])
+            scale = input_x * excitation
+
+            return scale
+
+        forward1_1 = channel_attention(up_fea, dim, 4, 'forward_attention1')
+        forward1_2 = silm.conv2d(middle_fea, dim, [1, 1])
+        forward1_1 += forward1_2
+
+        forward2_1 = channel_attention(
+            forward1_1, dim, 4, 'forward_attention2')
+        forward2_2 = silm.conv2d(down_fea, dim, [1, 1])
+        forward2_1 += forward2_2
+
+        backward1_1 = channel_attention(
+            down_fea, dim, 4, 'backward_attention1')
+        backward1_2 = silm.conv2d(middle_fea, dim, [1, 1])
+        backward1_1 += backward1_2
+
+        backward2_1 = channel_attention(
+            backward1_1, dim, 4, 'backward_attention2')
+        backward2_2 = silm.conv2d(up_fea, dim, [1, 1])
+        backward2_1 += backward2_2
+
+        out_fea = tf.concat([forward1_1, middle_fea, backward2_1], 3)
+        out_fea = slim.conv2d(out_fea, dim, [1, 1])
+        return out_fea
 
     def build_model(self):
         img_in, img_gt, img_ed = self.input_producer(self.batch_size)
@@ -215,41 +275,38 @@ class DEBLUR(object):
               img_gt.get_shape(), img_ed.get_shape())
 
         # generator
-        pred, refine, ed, all_vars = self.generator(
+        pred, refine, ed = self.generator(
             img_in, reuse=False, scope=self.model_flag)
         # calculate multi-scale loss
         self.loss_total = 0
+
+        # final l2 loss
         _, hi, wi, _ = pred.get_shape().as_list()
         gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
-        l1_loss = tf.reduce_mean((gt_i - pred) ** 2) * 10
-        self.l1_loss = l1_loss
+        l2_loss = tf.reduce_mean((gt_i - pred) ** 2)
         self.loss_total += l1_loss
 
-        #_, hi, wi, _ = ed.get_shape().as_list
-        ed_i = tf.image.resize_images(img_ed, [hi, wi], method=0)
-        ed_loss = tf.reduce_mean((ed_i - ed) ** 2) * 2
-        self.loss_total += ed_loss
-
-        for i in xrange(3):
+        # multi-scale refine and edge loss
+        for i in range(3):
             _, hi, wi, _ = refine[i].get_shape().as_list()
             gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
-            loss = tf.reduce_mean((gt_i - refine[i]) ** 2)*0.5
-            loss = loss*(3-i)
-            self.loss_total += loss
+            ed_i = tf.image.resize_images(img_ed, [hi, wi], method=0)
+            re_loss = tf.reduce_mean(gt_i - refine[i])
+            ed_loss = tf.reduce_mean(ed_i - ed[i])
+            ww = 1/(2**(3-i))
+            self.loss_total += re_loss
+            self.loss_total += ed_loss
             tf.summary.image('refine_' + str(i), im2uint8(refine[i]))
-            tf.summary.scalar('refine_loss_'+str(i), loss)
+            tf.summary.scalar('refine_loss_'+str(i), re_loss)
+            tf.summary.image('edge_' + str(i), im2uint8(ed[i]))
+            tf.summary.scalar('ed_loss_'+str(i), ed_loss)
 
         tf.summary.image('out_', im2uint8(pred))
-        tf.summary.image('edge_out_', im2uint8(ed))
-        tf.summary.scalar('loss_l1', l1_loss)
-        tf.summary.scalar('loss_edge', ed_loss)
+        tf.summary.scalar('loss_l2', l2_loss)
         # losses
         tf.summary.scalar('loss_total', self.loss_total)
-        tf.summary.scalar('epoch_loss', self.epoch_loss)
-
         # training vars
-        # all_vars = tf.trainable_variables()
-        # init_var = [v for v in all_vars if 'vgg_16' not in v.name]
+        all_vars = tf.trainable_variables()
         self.all_vars = all_vars
         for var in all_vars:
             print(var.name)
