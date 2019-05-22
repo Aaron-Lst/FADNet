@@ -230,7 +230,7 @@ class DEBLUR(object):
 				scale = input_x * excitation
 			return scale
 		with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
-							activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=None,
+							activation_fn=None, padding='SAME', normalizer_fn=None,
 							weights_initializer=tf.contrib.layers.xavier_initializer(
 								uniform=True),
 							biases_initializer=tf.constant_initializer(0.0)):
@@ -277,11 +277,12 @@ class DEBLUR(object):
 			_, hi, wi, _ = refine[i].get_shape().as_list()
 			gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
 			ed_i = tf.image.resize_images(img_ed, [hi, wi], method=0)
-			re_loss = tf.reduce_mean(gt_i - refine[i])
-			ed_loss = tf.reduce_mean(ed_i - ed[i])
-			ww = 1/(2**(3-i))
-			self.loss_total += re_loss * ww
-			self.loss_total += ed_loss * ww
+			re_loss = tf.reduce_mean((gt_i - refine[i]) ** 2)
+			ed_loss = tf.reduce_mean((ed_i - ed[i]) ** 2)
+			# ww = 1/(2**(3-i))
+			ww = 1
+			self.loss_total += (re_loss * ww)
+			self.loss_total += (ed_loss * ww)
 			tf.summary.image('refine_' + str(i), im2uint8(refine[i]))
 			tf.summary.scalar('refine_loss_'+str(i), re_loss)
 			tf.summary.image('edge_' + str(i), im2uint8(ed[i]))
@@ -371,7 +372,7 @@ class DEBLUR(object):
 					'%s: step %d, loss = (%.5f;)(%.1f data/s; %.3f s/bch)')
 				print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step,
 									loss_total_val, examples_per_sec, sec_per_batch))
-			self.epoch_loss += loss_total_val
+			#self.epoch_loss += loss_total_val
 			#if step % self.data_size == 0:
 			if step % 20 == 0: 
 				# self.epoch_loss = self.epoch_loss/self.data_size

@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-4,
                         dest='learning_rate', help='initial learning rate')
     parser.add_argument('--gpu', dest='gpu_id', type=str,
-                        default='2, 3', help='use gpu or cpu')
+                        default='0', help='use gpu or cpu')
     parser.add_argument('--height', type=int, default=720,
                         help='height for the tensorflow placeholder, should be multiples of 16')
     parser.add_argument('--width', type=int, default=1280,
