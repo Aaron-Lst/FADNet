@@ -222,9 +222,9 @@ class DEBLUR(object):
 		def channel_attention(input_x, out_dim, ratio, layer_name):
 			with tf.name_scope(layer_name):
 				squeeze = global_avg_pool(input_x, name='Global_avg_pooling')
-				excitation = tf.layers.dense(squeeze, units=out_dim / ratio, layer_name=layer_name+'_fully_connected1')
+				excitation = tf.layers.dense(input=squeeze, use_bias=False, units=out_dim / ratio)
 				excitation = tf.nn.relu(excitation)
-				excitation = tf.layers.dense(excitation, units=out_dim, layer_name=layer_name+'_fully_connected2')
+				excitation = tf.layers.dense(input=excitation, use_bias=False, units=out_dim)
 				excitation = tf.nn.sigmoid(excitation)
 				excitation = tf.reshape(excitation, [-1, 1, 1, out_dim])
 				scale = input_x * excitation
