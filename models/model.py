@@ -269,9 +269,10 @@ class DEBLUR(object):
 		# final l2 loss
 		_, hi, wi, _ = pred.get_shape().as_list()
 		gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
-		l2_loss = tf.reduce_mean((gt_i - pred) ** 2) * 5
+		l2_loss = tf.reduce_mean((gt_i - pred) ** 2)
 		self.loss_total += l2_loss
-
+		re_loss_total = 0
+		ed_loss_total = 0
 		# multi-scale refine and edge loss
 		for i in range(3):
 			_, hi, wi, _ = refine[i].get_shape().as_list()
@@ -280,14 +281,16 @@ class DEBLUR(object):
 			re_loss = tf.reduce_mean((gt_i - refine[i]) ** 2)
 			ed_loss = tf.reduce_mean((ed_i - ed[i]) ** 2)
 			ww = 1/(2**(2-i))
-			ww = 1
-			self.loss_total += (re_loss * ww)
-			self.loss_total += (ed_loss * ww)
+			# ww = 1
+			re_loss_total += (re_loss * ww)
+			ed_loss_total += (ed_loss * ww)
 			tf.summary.image('refine_' + str(i), im2uint8(refine[i]))
 			tf.summary.scalar('refine_loss_'+str(i), re_loss)
 			tf.summary.image('edge_' + str(i), im2uint8(ed[i]))
 			tf.summary.scalar('ed_loss_'+str(i), ed_loss)
 
+		self.loss_total += re_loss_total * 0.001
+		self.loss_total += ed_loss_total * 0.001
 		tf.summary.image('out_', im2uint8(pred))
 		tf.summary.scalar('loss_l2', l2_loss)
 		# losses
