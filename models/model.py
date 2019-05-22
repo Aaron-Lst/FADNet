@@ -136,7 +136,7 @@ class DEBLUR(object):
 			deconv3_1 = ResnetBlock(deconv3_2, 128, 5, scope='dec3_1')
 
 			# refine1
-			refine1_0 = slim.conv2d(cat3, 64, [1, 1])
+			refine1_0 = slim.conv2d(cat3, 32, [1, 1])
 			refine1_1 = slim.conv2d(
 				refine1_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=None, scope='pred_')
 			refine1_2 = slim.conv2d(
@@ -144,7 +144,7 @@ class DEBLUR(object):
 			refine.append(refine1_1)
 
 			# edge1
-			edge1_0 = slim.conv2d(cat3, 64, [1, 1])
+			edge1_0 = slim.conv2d(cat3, 32, [1, 1])
 			edge1_1 = slim.conv2d(
 				edge1_0, 1, [5, 5], stride=1, activation_fn=None, reuse=None, scope='edpred_')
 			edge1_2 = slim.conv2d(
@@ -165,7 +165,7 @@ class DEBLUR(object):
 			deconv2_1 = ResnetBlock(deconv2_2, 64, 5, scope='dec2_1')
 
 			# refine2
-			refine2_0 = slim.conv2d(cat2, 64, [1, 1])
+			refine2_0 = slim.conv2d(cat2, 32, [1, 1])
 			refine2_1 = slim.conv2d(
 				refine2_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
 			refine2_2 = slim.conv2d(
@@ -173,7 +173,7 @@ class DEBLUR(object):
 			refine.append(refine2_1)
 
 			# edge2
-			edge2_0 = slim.conv2d(cat2, 64, [1, 1])
+			edge2_0 = slim.conv2d(cat2, 32, [1, 1])
 			edge2_1 = slim.conv2d(
 				edge2_0, 1, [5, 5], stride=1, activation_fn=None, reuse=True, scope='edpred_')
 			edge2_2 = slim.conv2d(
@@ -194,7 +194,7 @@ class DEBLUR(object):
 			deconv1_1 = ResnetBlock(deconv1_2, 32, 5, scope='dec1_1')
 
 			# refine3
-			refine3_0 = slim.conv2d(cat1, 64, [1, 1])
+			refine3_0 = slim.conv2d(cat1, 32, [1, 1])
 			refine3_1 = slim.conv2d(
 				refine3_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
 			refine3_2 = slim.conv2d(
@@ -202,7 +202,7 @@ class DEBLUR(object):
 			refine.append(refine3_1)
 
 			# edge3
-			edge3_0 = slim.conv2d(cat1, 64, [1, 1])
+			edge3_0 = slim.conv2d(cat1, 32, [1, 1])
 			edge3_1 = slim.conv2d(
 				edge3_0, 1, [5, 5], stride=1, activation_fn=None, reuse=True, scope='edpred_')
 			edge3_2 = slim.conv2d(
