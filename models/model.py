@@ -247,7 +247,7 @@ class DEBLUR(object):
 			backward1_1, dim, 4, 'backward_attention2')
 			backward2_2 = slim.conv2d(up_fea, dim, [3, 3])
 			backward2_1 += backward2_2
-			out_fea = tf.concat([forward1_1, middle_fea, backward2_1], 3)
+			out_fea = tf.concat([forward2_1, middle_fea, backward2_1], 3)
 			out_fea = slim.conv2d(out_fea, dim, [1, 1])
 		return out_fea
 
