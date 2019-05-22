@@ -372,12 +372,13 @@ class DEBLUR(object):
 				print(format_str % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), step,
 									loss_total_val, examples_per_sec, sec_per_batch))
 			self.epoch_loss += loss_total_val
-			if step % self.data_size == 0:
-				self.epoch_loss = self.epoch_loss/self.data_size
+			#if step % self.data_size == 0:
+			if step % 20 == 0: 
+				# self.epoch_loss = self.epoch_loss/self.data_size
 				# summary_str = sess.run(summary_op, feed_dict={inputs:batch_input, gt:batch_gt})
 				summary_str = sess.run(summary_op)
 				summary_writer.add_summary(summary_str, global_step=step)
-				self.epoch_loss = 0
+				# self.epoch_loss = 0
 
 			# Save the model checkpoint periodically.
 			if step > self.max_steps/2:
