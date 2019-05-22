@@ -230,22 +230,22 @@ class DEBLUR(object):
 				scale = input_x * excitation
 			return scale
 		with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
-							activation_fn=None, padding='SAME', normalizer_fn=None,
+							activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=None,
 							weights_initializer=tf.contrib.layers.xavier_initializer(
 								uniform=True),
 							biases_initializer=tf.constant_initializer(0.0)):
 			forward1_1 = channel_attention(up_fea, dim, 4, 'forward_attention1')
-			forward1_2 = slim.conv2d(middle_fea, dim, [1, 1])
+			forward1_2 = slim.conv2d(middle_fea, dim, [3, 3])
 			forward1_1 += forward1_2
 			forward2_1 = channel_attention(forward1_1, dim, 4, 'forward_attention2')
-			forward2_2 = slim.conv2d(down_fea, dim, [1, 1])
+			forward2_2 = slim.conv2d(down_fea, dim, [3, 3])
 			forward2_1 += forward2_2
 			backward1_1 = channel_attention(down_fea, dim, 4, 'backward_attention1')
-			backward1_2 = slim.conv2d(middle_fea, dim, [1, 1])
+			backward1_2 = slim.conv2d(middle_fea, dim, [3, 3])
 			backward1_1 += backward1_2
 			backward2_1 = channel_attention(
 			backward1_1, dim, 4, 'backward_attention2')
-			backward2_2 = slim.conv2d(up_fea, dim, [1, 1])
+			backward2_2 = slim.conv2d(up_fea, dim, [3, 3])
 			backward2_1 += backward2_2
 			out_fea = tf.concat([forward1_1, middle_fea, backward2_1], 3)
 			out_fea = slim.conv2d(out_fea, dim, [1, 1])
@@ -269,7 +269,7 @@ class DEBLUR(object):
 		# final l2 loss
 		_, hi, wi, _ = pred.get_shape().as_list()
 		gt_i = tf.image.resize_images(img_gt, [hi, wi], method=0)
-		l2_loss = tf.reduce_mean((gt_i - pred) ** 2) * 10
+		l2_loss = tf.reduce_mean((gt_i - pred) ** 2) * 5
 		self.loss_total += l2_loss
 
 		# multi-scale refine and edge loss
@@ -279,7 +279,7 @@ class DEBLUR(object):
 			ed_i = tf.image.resize_images(img_ed, [hi, wi], method=0)
 			re_loss = tf.reduce_mean((gt_i - refine[i]) ** 2)
 			ed_loss = tf.reduce_mean((ed_i - ed[i]) ** 2)
-			# ww = 1/(2**(3-i))
+			ww = 1/(2**(2-i))
 			ww = 1
 			self.loss_total += (re_loss * ww)
 			self.loss_total += (ed_loss * ww)
