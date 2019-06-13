@@ -302,25 +302,7 @@ class DEBLUR(object):
 			print(var.name)
 
 	def train(self):
-		def get_optimizer(loss, global_step=None, var_list=None, is_gradient_clip=False):
-			train_op = tf.train.AdamOptimizer(self.lr)
-			if is_gradient_clip:
-				grads_and_vars = train_op.compute_gradients(
-					loss, var_list=var_list)
-				unchanged_gvs = [
-					(grad, var) for grad, var in grads_and_vars if not 'LSTM' in var.name]
-				rnn_grad = [grad for grad,
-							var in grads_and_vars if 'LSTM' in var.name]
-				rnn_var = [var for grad,
-						   var in grads_and_vars if 'LSTM' in var.name]
-				capped_grad, _ = tf.clip_by_global_norm(rnn_grad, clip_norm=3)
-				capped_gvs = list(zip(capped_grad, rnn_var))
-				train_op = train_op.apply_gradients(
-					grads_and_vars=capped_gvs + unchanged_gvs, global_step=global_step)
-			else:
-				train_op = train_op.minimize(loss, global_step, var_list)
-			return train_op
-
+		
 		global_step = tf.Variable(
 			initial_value=0, dtype=tf.int32, trainable=False)
 		self.global_step = global_step
@@ -334,7 +316,8 @@ class DEBLUR(object):
 		tf.summary.scalar('learning_rate', self.lr)
 
 		# training operators
-		train_gnet = get_optimizer(self.loss_total, global_step, self.all_vars)
+		train_op = tf.train.AdamOptimizer(self.lr)
+		train_gnet = train_op.minimize(self.loss_total, global_step, self.all_vars)
 
 		# session and thread
 		gpu_options = tf.GPUOptions(allow_growth=True)
