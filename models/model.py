@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import time
+import pdb
 from datetime import datetime
 
 import numpy as np
@@ -395,7 +396,7 @@ class DEBLUR(object):
             self.loss_total, global_step, self.all_vars)
 
         # session and thread
-        gpu_options = tf.GPUOptions(allow_growth=True)
+        # gpu_options = tf.GPUOptions(allow_growth=True)
         sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                                 log_device_placement=False))
         sess.run(tf.group(tf.global_variables_initializer(),
@@ -469,7 +470,7 @@ class DEBLUR(object):
             batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue(
                 [img_batch, img_batch, img_batch], capacity=20 * self.gpu_num)
             tower_grads = []
-
+            pdb.set_trace()
             with tf.variable_scope(tf.get_variable_scope()):
                 for i in range(self.gpu_num):
                     with tf.device('/gpu:%d' % i):
