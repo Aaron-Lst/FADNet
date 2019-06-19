@@ -77,10 +77,10 @@ class DEBLUR(object):
             ed_list = List_all[:, 2]
 
             self.data_queue = tf.train.slice_input_producer(
-                [in_list, gt_list, ed_list], capacity=256)
+                [in_list, gt_list, ed_list], capacity=500)
             image_in, image_gt, image_ed = read_data()
             batch_in, batch_gt, batch_ed = tf.train.batch(
-                [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=16, capacity=256)
+                [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=16, capacity=500)
 
         return batch_in, batch_gt, batch_ed
 
@@ -468,7 +468,7 @@ class DEBLUR(object):
             img_batch, img_gt_batch, img_ed_batch = self.input_producer(
                 self.batch_size)
             batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue(
-                [img_batch, img_gt_batch, img_ed_batch], capacity=16 * self.gpu_num)
+                [img_batch, img_gt_batch, img_ed_batch], capacity=32 * self.gpu_num)
             tower_grads = []
             # pdb.set_trace()
             with tf.variable_scope(tf.get_variable_scope()):
@@ -538,8 +538,8 @@ class DEBLUR(object):
 
             sess.run(tf.group(tf.global_variables_initializer(),
                               tf.local_variables_initializer()))
-
-            tf.train.start_queue_runners(sess=sess)
+            coord = tf.train.Coordinator()
+            tf.train.start_queue_runners(sess=sess, coord=coord)
 
             # training summary
             summary_op = tf.summary.merge(summaries)
