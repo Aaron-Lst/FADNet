@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import sys
 import time
 import random
 import datetime
@@ -88,7 +89,7 @@ class DEBLUR(object):
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
-            _, h, w, _ = inputs.get_shape().as_list() #batch_size, hight, wight, channel
+            _, h, w, _ = inputs.get_shape().as_list()  # batch_size, hight, wight, channel
             inp_pred = inputs
             scale = self.scale
             hi = int(round(h * scale))
@@ -217,7 +218,7 @@ class DEBLUR(object):
             with tf.name_scope(layer_name):
                 squeeze = global_avg_pool(input_x, name='Global_avg_pooling')
                 excitation = tf.layers.dense(
-                    inputs=squeeze, use_bias=False, units=out_dim / ratio, name=layer_name+'_'+dense1')
+                    inputs=squeeze, use_bias=False, units=out_dim / ratio, name=layer_name+'_'+'dense1')
                 excitation = tf.nn.relu(excitation)
                 excitation = tf.layers.dense(
                     inputs=excitation, use_bias=False, units=out_dim, name=layer_name+'_'+'dense2')
@@ -624,8 +625,7 @@ class DEBLUR(object):
         self.batch_size = 1 if self.args.model == 'color' else 3
         inputs = tf.placeholder(
             shape=[self.batch_size, H, W, inp_chns], dtype=tf.float32)
-        outputs, _, _ = self.generator(
-            inputs, reuse=False, scope=self.model_flag)
+        outputs, _, _ = self.model_refine(inputs,'FADNet')
 
         sess = tf.Session(config=tf.ConfigProto(
             gpu_options=tf.GPUOptions(allow_growth=True)))
@@ -640,7 +640,7 @@ class DEBLUR(object):
                 output_path, self.model_flag + '_' + self.exp_num, split_name[-3], 'sharp')
             if not os.path.exists(path_temp):
                 os.makedirs(path_temp)
-            h, w, c = blur.shape
+            h, w, _ = blur.shape
             # make sure the width is larger than the height
             rot = False
             if h > w:
