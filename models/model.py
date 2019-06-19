@@ -362,8 +362,8 @@ class DEBLUR(object):
             # ww = 1
             re_loss_total += (re_loss * ww)
             ed_loss_total += (ed_loss * ww)
-            tf.summary.image(scope + 'refine_' + str(i), im2uint8(refine[i]))
-            tf.summary.image(scope + 'edge_' + str(i), im2uint8(ed[i]))
+            # tf.summary.image(scope + 'refine_' + str(i), im2uint8(refine[i]))
+            # tf.summary.image(scope + 'edge_' + str(i), im2uint8(ed[i]))
         re_loss_total = tf.multiply(re_loss_total, 1.25, name='refine_loss')
         ed_loss_total = tf.multiply(ed_loss_total, 1, name='edge_loss')
         tf.summary.image(scope + 'out_', im2uint8(pred))
