@@ -393,7 +393,8 @@ class DEBLUR(object):
 
         # session and thread
         gpu_options = tf.GPUOptions(allow_growth=True)
-        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+        sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
+                                                log_device_placement=True))
         self.sess = sess
         sess.run(tf.group(tf.global_variables_initializer(),
                           tf.local_variables_initializer()))
@@ -625,7 +626,7 @@ class DEBLUR(object):
         self.batch_size = 1 if self.args.model == 'color' else 3
         inputs = tf.placeholder(
             shape=[self.batch_size, H, W, inp_chns], dtype=tf.float32)
-        outputs, _, _ = self.model_refine(inputs,'FADNet')
+        outputs, _, _ = self.model_refine(inputs, 'FADNet')
 
         sess = tf.Session(config=tf.ConfigProto(
             gpu_options=tf.GPUOptions(allow_growth=True)))
