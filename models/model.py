@@ -2,10 +2,11 @@ from __future__ import print_function
 
 import datetime
 import os
+import pdb
 import random
+import re
 import sys
 import time
-import pdb
 from datetime import datetime
 
 import numpy as np
@@ -77,10 +78,10 @@ class DEBLUR(object):
             ed_list = List_all[:, 2]
 
             self.data_queue = tf.train.slice_input_producer(
-                [in_list, gt_list, ed_list])
+                [in_list, gt_list, ed_list], capacity=128)
             image_in, image_gt, image_ed = read_data()
             batch_in, batch_gt, batch_ed = tf.train.batch(
-                [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=16)
+                [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=16, capacity=128)
 
         return batch_in, batch_gt, batch_ed
 
@@ -366,11 +367,11 @@ class DEBLUR(object):
             # ww = 1
             re_loss_total += (re_loss * ww)
             ed_loss_total += (ed_loss * ww)
-            tf.summary.image(scope + 'refine_' + str(i), im2uint8(refine[i]))
-            tf.summary.image(scope + 'edge_' + str(i), im2uint8(ed[i]))
+            # tf.summary.image(scope + 'refine_' + str(i), im2uint8(refine[i]))
+            # tf.summary.image(scope + 'edge_' + str(i), im2uint8(ed[i]))
         re_loss_total = tf.multiply(re_loss_total, 1.25, name='refine_loss')
         ed_loss_total = tf.multiply(ed_loss_total, 1, name='edge_loss')
-        tf.summary.image(scope + 'out_', im2uint8(pred))
+        # tf.summary.image(scope + 'out_', im2uint8(pred))
         tf.add_to_collection('losses', re_loss_total)
         tf.add_to_collection('losses', ed_loss_total)
         return tf.add_n(tf.get_collection('losses'), name='total_loss')
@@ -468,7 +469,7 @@ class DEBLUR(object):
             img_batch, img_gt_batch, img_ed_batch = self.input_producer(
                 self.batch_size)
             batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue(
-                [img_batch, img_gt_batch, img_ed_batch])
+                [img_batch, img_gt_batch, img_ed_batch], capacity=8)
             tower_grads = []
             # pdb.set_trace()
             with tf.variable_scope(tf.get_variable_scope()):
@@ -477,14 +478,14 @@ class DEBLUR(object):
                         with tf.name_scope('FADNet_tower_%d' % i) as scope:
                             img_in, img_gt, img_ed = batch_queue.dequeue()
 
-                            tf.summary.image(scope + 'img_in',
-                                             im2uint8(img_in))
-                            tf.summary.image(scope + 'img_gt',
-                                             im2uint8(img_gt))
-                            tf.summary.image(scope + 'img_ed',
-                                             im2uint8(img_ed))
-                            print('img_in, img_gt', 'img_ed', img_in.get_shape(),
-                                  img_gt.get_shape(), img_ed.get_shape())
+                            # tf.summary.image(scope + 'img_in',
+                            #                  im2uint8(img_in))
+                            # tf.summary.image(scope + 'img_gt',
+                            #                  im2uint8(img_gt))
+                            # tf.summary.image(scope + 'img_ed',
+                            #                  im2uint8(img_ed))
+                            # print('img_in, img_gt', 'img_ed', img_in.get_shape(),
+                            #       img_gt.get_shape(), img_ed.get_shape())
 
                             # generator
                             pred, refine, ed = self.model_refine(
@@ -498,7 +499,8 @@ class DEBLUR(object):
                             total_loss = tf.add_n(losses, name='total_loss')
 
                             for l in losses + [total_loss]:
-                                tf.summary.scalar(scope+l.op.name, l)
+                                loss_name = re.sub('FADNET_tower_[0-9]*/', '', l.op.name)
+                                tf.summary.scalar(loss_name, l)
 
                             tf.get_variable_scope().reuse_variables()
 
@@ -513,17 +515,17 @@ class DEBLUR(object):
             summaries.append(tf.summary.scalar('learning_rate', self.lr))
 
             # Add histograms for gradients.
-            for grad, var in grads:
-                if grad is not None:
-                    summaries.append(tf.summary.histogram(
-                        var.op.name + '/gradients', grad))
+            # for grad, var in grads:
+            #     if grad is not None:
+            #         summaries.append(tf.summary.histogram(
+            #             var.op.name + '/gradients', grad))
 
             # Apply the gradients to adjust the shared variables.
             apply_gradient_op = opt.apply_gradients(
                 grads, global_step=global_step)
             # Add histograms for trainable variables.
-            for var in tf.trainable_variables():
-                summaries.append(tf.summary.histogram(var.op.name, var))
+            # for var in tf.trainable_variables():
+            #     summaries.append(tf.summary.histogram(var.op.name, var))
 
             train_op = apply_gradient_op
 
