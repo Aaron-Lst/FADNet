@@ -57,8 +57,8 @@ class DEBLUR(object):
             imgs = [tf.cast(img, tf.float32) / 255.0 for img in imgs]
             if self.model == 'gray':
                 imgs = [tf.image.rgb_to_grayscale(img) for img in imgs]
-            else:
-                imgs[2] = tf.image.rgb_to_grayscale(imgs[2])
+            # else:
+            #     imgs[2] = tf.image.rgb_to_grayscale(imgs[2])
             img_crop = tf.unstack(tf.random_crop(tf.stack(imgs, axis=0), [3, self.crop_size, self.crop_size, self.chns]),
                                   axis=0)
             return img_crop
