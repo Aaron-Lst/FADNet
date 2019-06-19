@@ -29,13 +29,13 @@ class DEBLUR(object):
         self.load_dir = self.args.load_dir
         if not os.path.exists(self.train_dir):
             os.makedirs(self.train_dir)
-        self.gpu_num = len(self.args.gpus.split(','))
+        self.gpu_num = len(self.args.gpu.split(','))
         self.batch_size = self.args.batch_size
         self.epoch = self.args.epoch
         self.data_size = (len(self.data_list)) // self.batch_size
         self.max_steps = int(self.epoch * self.data_size)
         self.learning_rate = self.args.learning_rate
-        self.load_step = self.rgs.load_step
+        self.load_step = self.args.load_step
         self.loss_thread = 0.004
         self.min_loss_val = 1
         self.epoch_loss = 0
