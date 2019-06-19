@@ -468,7 +468,7 @@ class DEBLUR(object):
             img_batch, img_gt_batch, img_ed_batch = self.input_producer(
                 self.batch_size)
             batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue(
-                [img_batch, img_gt_batch, img_ed_batch], capacity=8 * self.gpu_num)
+                [img_batch, img_gt_batch, img_ed_batch], capacity=16 * self.gpu_num)
             tower_grads = []
             # pdb.set_trace()
             with tf.variable_scope(tf.get_variable_scope()):
