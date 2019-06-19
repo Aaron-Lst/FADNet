@@ -51,6 +51,8 @@ class DEBLUR(object):
                                           channels=3)
             img_a, img_b, img_c = preprocessing([img_a, img_b, img_c])
 
+            img_c = tf.image.rgb_to_grayscale(img_c)
+
             return img_a, img_b, img_c
 
         def preprocessing(imgs):
@@ -86,7 +88,7 @@ class DEBLUR(object):
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
-            n, h, w, c = inputs.get_shape().as_list()
+            _, h, w, _ = inputs.get_shape().as_list() #batch_size, hight, wight, channel
             inp_pred = inputs
             scale = self.scale
             hi = int(round(h * scale))
@@ -215,10 +217,10 @@ class DEBLUR(object):
             with tf.name_scope(layer_name):
                 squeeze = global_avg_pool(input_x, name='Global_avg_pooling')
                 excitation = tf.layers.dense(
-                    inputs=squeeze, use_bias=False, units=out_dim / ratio, name=layer_name+'dense1')
+                    inputs=squeeze, use_bias=False, units=out_dim / ratio, name=layer_name+'_'+dense1')
                 excitation = tf.nn.relu(excitation)
                 excitation = tf.layers.dense(
-                    inputs=excitation, use_bias=False, units=out_dim, name=layer_name+'dense2')
+                    inputs=excitation, use_bias=False, units=out_dim, name=layer_name+'_'+'dense2')
                 excitation = tf.nn.sigmoid(excitation)
                 excitation = tf.reshape(excitation, [-1, 1, 1, out_dim])
                 scale = input_x * excitation
@@ -230,28 +232,28 @@ class DEBLUR(object):
                 biases_initializer=tf.constant_initializer(0.0)):
             with tf.name_scope(scope):
                 forward1_1 = channel_attention(
-                    up_fea, dim, 4, scope + 'forward_attention1')
+                    up_fea, dim, 4, scope+'_'+'forward_attention1')
                 forward1_2 = slim.conv2d(
-                    middle_fea, dim, [3, 3], scope=scope+'forward1_2')
+                    middle_fea, dim, [3, 3], scope=scope+'_'+'forward1_2')
                 forward1_1 += forward1_2
                 forward2_1 = channel_attention(
-                    forward1_1, dim, 4, scope + 'forward_attention2')
+                    forward1_1, dim, 4, scope+'_'+'forward_attention2')
                 forward2_2 = slim.conv2d(
-                    down_fea, dim, [3, 3], scope=scope+'forward2_2')
+                    down_fea, dim, [3, 3], scope=scope+'_'+'forward2_2')
                 forward2_1 += forward2_2
                 backward1_1 = channel_attention(
-                    down_fea, dim, 4, scope + 'backward_attention1')
+                    down_fea, dim, 4, scope+'_'+'backward_attention1')
                 backward1_2 = slim.conv2d(
-                    middle_fea, dim, [3, 3], scope=scope+'backward1_2')
+                    middle_fea, dim, [3, 3], scope=scope+'_'+'backward1_2')
                 backward1_1 += backward1_2
                 backward2_1 = channel_attention(
-                    backward1_1, dim, 4, scope + 'backward_attention2')
+                    backward1_1, dim, 4, scope+'_'+'backward_attention2')
                 backward2_2 = slim.conv2d(
-                    up_fea, dim, [3, 3], scope=scope+'backward2_2')
+                    up_fea, dim, [3, 3], scope=scope+'_'+'backward2_2')
                 backward2_1 += backward2_2
                 out_fea = tf.concat([forward2_1, middle_fea, backward2_1], 3)
                 out_fea = slim.conv2d(
-                    out_fea, dim, [1, 1], scope=scope+'out_fea')
+                    out_fea, dim, [1, 1], scope=scope+'_'+'out_fea')
         return out_fea
 
     def average_gradients(self, tower_grads):
