@@ -14,8 +14,6 @@ def parse_args():
                         default='./edge_train_datalist.txt', help='training datalist')
     parser.add_argument('--model', type=str, default='color',
                         help='model type: [gray | color]')
-    parser.add_argument('--model_flag', type=str, default='refine',
-                        help='model type: [refine | deeper | rpn]')
     parser.add_argument(
         '--batch_size', help='training batch size', type=int, default=128)
     parser.add_argument(
@@ -23,16 +21,18 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-4,
                         dest='learning_rate', help='initial learning rate')
     parser.add_argument('--gpu', dest='gpu_id', type=str,
-                        default='0', help='use gpu or cpu')
+                        default='0,1', help='use gpu or cpu')
     parser.add_argument('--height', type=int, default=720,
                         help='height for the tensorflow placeholder, should be multiples of 16')
     parser.add_argument('--width', type=int, default=1280,
                         help='width for the tensorflow placeholder, should be multiple of 16 for 3 scales')
     parser.add_argument('--load_step', type=str, default='300000',
                         help='load checkpoint')
+    parser.add_argument('--load_dir', type=str, default='./checkpoints/FADNet_1')
     parser.add_argument('--output_path', type=str, default='./testing_res',
                         help='output path for testing images')
     parser.add_argument('--exp_num', type=str, default='1')
+
     args = parser.parse_args()
     return args
 
@@ -51,7 +51,10 @@ def main(_):
     if args.phase == 'test':
         deblur.test(args.height, args.width, args.output_path)
     elif args.phase == 'train':
-        deblur.train()
+        if deblur.gpu_num > 1:
+            deblur.multi_gpu_train()
+        else:
+            deblur.train()
     else:
         print('phase should be set to either test or train')
 
