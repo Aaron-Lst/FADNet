@@ -26,7 +26,7 @@ def parse_args():
                         help='height for the tensorflow placeholder, should be multiples of 16')
     parser.add_argument('--width', type=int, default=1280,
                         help='width for the tensorflow placeholder, should be multiple of 16 for 3 scales')
-    parser.add_argument('--load_step', type=str, default='300000',
+    parser.add_argument('--load_step', type=str, default='0',
                         help='load checkpoint')
     parser.add_argument('--load_dir', type=str, default='./checkpoints/FADNet_1')
     parser.add_argument('--output_path', type=str, default='./testing_res',
