@@ -468,8 +468,6 @@ class DEBLUR(object):
                 self.batch_size)
             batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue(
                 [img_batch, img_batch, img_batch], capacity=20 * self.gpu_num)
-            batch_queue.dequeue
-
             tower_grads = []
 
             with tf.variable_scope(tf.get_variable_scope()):
@@ -535,7 +533,7 @@ class DEBLUR(object):
                 max_to_keep=50, keep_checkpoint_every_n_hours=1)
 
             sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                    log_device_placement=True))
+                                                    log_device_placement=False))
 
             sess.run(tf.group(tf.global_variables_initializer(),
                               tf.local_variables_initializer()))
