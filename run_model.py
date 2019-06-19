@@ -51,7 +51,7 @@ def main(_):
     if args.phase == 'test':
         deblur.test(args.height, args.width, args.output_path)
     elif args.phase == 'train':
-        if deblur.gpu_num > 1:
+        if deblur.gpu_num >= 1:
             deblur.multi_gpu_train()
         else:
             deblur.train()

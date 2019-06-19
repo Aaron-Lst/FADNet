@@ -1,15 +1,18 @@
 from __future__ import print_function
+
+import datetime
 import os
+import random
 import sys
 import time
-import random
-import datetime
-import scipy.misc
+from datetime import datetime
+
 import numpy as np
+import scipy.misc
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tflearn.layers.conv import global_avg_pool
-from datetime import datetime
+
 from util.util import *
 
 
@@ -394,7 +397,7 @@ class DEBLUR(object):
         # session and thread
         gpu_options = tf.GPUOptions(allow_growth=True)
         sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                log_device_placement=True))
+                                                log_device_placement=False))
         sess.run(tf.group(tf.global_variables_initializer(),
                           tf.local_variables_initializer()))
 
