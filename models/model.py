@@ -371,7 +371,7 @@ class DEBLUR(object):
     def train(self):
 
         global_step = tf.Variable(
-            initial_value=tf.constant_initializer(0) if self.load_step == '0' else int(self.load_step), dtype=tf.int32, trainable=False)
+            initial_value=0 if self.load_step == '0' else int(self.load_step), dtype=tf.int32, trainable=False)
         self.global_step = global_step
 
         # build model
