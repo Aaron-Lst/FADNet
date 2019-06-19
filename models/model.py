@@ -80,7 +80,7 @@ class DEBLUR(object):
                 [in_list, gt_list, ed_list], capacity=64)
             image_in, image_gt, image_ed = read_data()
             batch_in, batch_gt, batch_ed = tf.train.batch(
-                [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=4, capacity=64)
+                [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=8, capacity=64)
 
         return batch_in, batch_gt, batch_ed
 
