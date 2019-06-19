@@ -48,11 +48,11 @@ class DEBLUR(object):
 
     def input_producer(self, batch_size=10):
         def read_data():
-            img_a = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/data/GOPRO_Large/train/', self.data_queue[0]])),
+            img_a = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/high_io_data/GOPRO_Large/train/', self.data_queue[0]])),
                                           channels=3)
-            img_b = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/data/GOPRO_Large/train/', self.data_queue[1]])),
+            img_b = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/high_io_data/GOPRO_Large/train/', self.data_queue[1]])),
                                           channels=3)
-            img_c = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/data/GOPRO_Large/train/', self.data_queue[2]])),
+            img_c = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/high_io_data/GOPRO_Large/train/', self.data_queue[2]])),
                                           channels=3)
             img_a, img_b, img_c = preprocessing([img_a, img_b, img_c])
 
@@ -398,7 +398,7 @@ class DEBLUR(object):
         # session and thread
         # gpu_options = tf.GPUOptions(allow_growth=True)
         sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                log_device_placement=False))
+                                                log_device_placement=True))
         sess.run(tf.group(tf.global_variables_initializer(),
                           tf.local_variables_initializer()))
 
@@ -534,7 +534,7 @@ class DEBLUR(object):
                 max_to_keep=50, keep_checkpoint_every_n_hours=1)
 
             sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                    log_device_placement=False))
+                                                    log_device_placement=True))
 
             sess.run(tf.group(tf.global_variables_initializer(),
                               tf.local_variables_initializer()))
