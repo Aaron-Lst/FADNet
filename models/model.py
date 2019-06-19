@@ -215,10 +215,10 @@ class DEBLUR(object):
             with tf.name_scope(layer_name):
                 squeeze = global_avg_pool(input_x, name='Global_avg_pooling')
                 excitation = tf.layers.dense(
-                    inputs=squeeze, use_bias=False, units=out_dim / ratio)
+                    inputs=squeeze, use_bias=False, units=out_dim / ratio, scope=layer_name+'dense1')
                 excitation = tf.nn.relu(excitation)
                 excitation = tf.layers.dense(
-                    inputs=excitation, use_bias=False, units=out_dim)
+                    inputs=excitation, use_bias=False, units=out_dim, scope=layer_name+'dense2')
                 excitation = tf.nn.sigmoid(excitation)
                 excitation = tf.reshape(excitation, [-1, 1, 1, out_dim])
                 scale = input_x * excitation
