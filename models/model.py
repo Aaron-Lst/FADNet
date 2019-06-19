@@ -77,7 +77,7 @@ class DEBLUR(object):
             ed_list = List_all[:, 2]
 
             self.data_queue = tf.train.slice_input_producer(
-                [in_list, gt_list, ed_list])
+                [in_list, gt_list, ed_list],capacity=5000)
             image_in, image_gt, image_ed = read_data()
             batch_in, batch_gt, batch_ed = tf.train.batch(
                 [image_in, image_gt, image_ed], batch_size=batch_size, num_threads=16, capacity=10000)
