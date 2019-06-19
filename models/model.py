@@ -128,7 +128,7 @@ class DEBLUR(object):
             deconv3_1 = ResnetBlock(deconv3_2, 128, 5, scope='dec3_1')
 
             # refine1
-            refine1_0 = slim.conv2d(cat3, 32, [1, 1])
+            refine1_0 = slim.conv2d(cat3, 32, [1, 1], scope='refine1_0')
             refine1_1 = slim.conv2d(
                 refine1_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=None, scope='pred_')
             refine1_2 = slim.conv2d(
@@ -136,7 +136,7 @@ class DEBLUR(object):
             refine.append(refine1_1)
 
             # edge1
-            edge1_0 = slim.conv2d(cat3, 32, [1, 1])
+            edge1_0 = slim.conv2d(cat3, 32, [1, 1], scope='edge1_0')
             edge1_1 = slim.conv2d(
                 edge1_0, 1, [5, 5], stride=1, activation_fn=None, reuse=None, scope='edpred_')
             edge1_2 = slim.conv2d(
@@ -145,7 +145,7 @@ class DEBLUR(object):
 
             # flow_attention1
             flow_attention1 = self.flowing_attention(
-                deconv3_1, refine1_2, edge1_2, 128)
+                deconv3_1, refine1_2, edge1_2, 128, 'flow_attention1')
 
             deconv2_4 = slim.conv2d_transpose(
                 flow_attention1, 64, [4, 4], stride=2, scope='dec2_4')
@@ -157,7 +157,7 @@ class DEBLUR(object):
             deconv2_1 = ResnetBlock(deconv2_2, 64, 5, scope='dec2_1')
 
             # refine2
-            refine2_0 = slim.conv2d(cat2, 32, [1, 1])
+            refine2_0 = slim.conv2d(cat2, 32, [1, 1], scope='refine2_0')
             refine2_1 = slim.conv2d(
                 refine2_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
             refine2_2 = slim.conv2d(
@@ -165,7 +165,7 @@ class DEBLUR(object):
             refine.append(refine2_1)
 
             # edge2
-            edge2_0 = slim.conv2d(cat2, 32, [1, 1])
+            edge2_0 = slim.conv2d(cat2, 32, [1, 1], scope='edge2_0')
             edge2_1 = slim.conv2d(
                 edge2_0, 1, [5, 5], stride=1, activation_fn=None, reuse=True, scope='edpred_')
             edge2_2 = slim.conv2d(
@@ -174,7 +174,7 @@ class DEBLUR(object):
 
             # flow_attention2
             flow_attention2 = self.flowing_attention(
-                deconv2_1, refine2_2, edge2_2, 64)
+                deconv2_1, refine2_2, edge2_2, 64, 'flow_attention2')
 
             deconv1_4 = slim.conv2d_transpose(
                 flow_attention2, 32, [4, 4], stride=2, scope='dec1_4')
@@ -186,7 +186,7 @@ class DEBLUR(object):
             deconv1_1 = ResnetBlock(deconv1_2, 32, 5, scope='dec1_1')
 
             # refine3
-            refine3_0 = slim.conv2d(cat1, 32, [1, 1])
+            refine3_0 = slim.conv2d(cat1, 32, [1, 1], scope='refine3_0')
             refine3_1 = slim.conv2d(
                 refine3_0, self.chns, [5, 5], stride=1, activation_fn=None, reuse=True, scope='pred_')
             refine3_2 = slim.conv2d(
@@ -194,7 +194,7 @@ class DEBLUR(object):
             refine.append(refine3_1)
 
             # edge3
-            edge3_0 = slim.conv2d(cat1, 32, [1, 1])
+            edge3_0 = slim.conv2d(cat1, 32, [1, 1], scope='edge3_0')
             edge3_1 = slim.conv2d(
                 edge3_0, 1, [5, 5], stride=1, activation_fn=None, reuse=True, scope='edpred_')
             edge3_2 = slim.conv2d(
@@ -203,14 +203,14 @@ class DEBLUR(object):
 
             # flow_attention3
             flow_attention3 = self.flowing_attention(
-                deconv1_1, refine3_2, edge3_2, 32)
+                deconv1_1, refine3_2, edge3_2, 32, 'flow_attention3')
 
             inp_pred = slim.conv2d(flow_attention3, self.chns, [
                 5, 5], activation_fn=None, reuse=True, scope='pred_')
 
         return inp_pred, refine, edge
 
-    def flowing_attention(self, middle_fea, up_fea, down_fea, dim):
+    def flowing_attention(self, middle_fea, up_fea, down_fea, dim, scope):
         def channel_attention(input_x, out_dim, ratio, layer_name):
             with tf.name_scope(layer_name):
                 squeeze = global_avg_pool(input_x, name='Global_avg_pooling')
@@ -228,24 +228,30 @@ class DEBLUR(object):
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
-            forward1_1 = channel_attention(
-                up_fea, dim, 4, 'forward_attention1')
-            forward1_2 = slim.conv2d(middle_fea, dim, [3, 3])
-            forward1_1 += forward1_2
-            forward2_1 = channel_attention(
-                forward1_1, dim, 4, 'forward_attention2')
-            forward2_2 = slim.conv2d(down_fea, dim, [3, 3])
-            forward2_1 += forward2_2
-            backward1_1 = channel_attention(
-                down_fea, dim, 4, 'backward_attention1')
-            backward1_2 = slim.conv2d(middle_fea, dim, [3, 3])
-            backward1_1 += backward1_2
-            backward2_1 = channel_attention(
-                backward1_1, dim, 4, 'backward_attention2')
-            backward2_2 = slim.conv2d(up_fea, dim, [3, 3])
-            backward2_1 += backward2_2
-            out_fea = tf.concat([forward2_1, middle_fea, backward2_1], 3)
-            out_fea = slim.conv2d(out_fea, dim, [1, 1])
+            with tf.name_scope(scope):
+                forward1_1 = channel_attention(
+                    up_fea, dim, 4, scope + 'forward_attention1')
+                forward1_2 = slim.conv2d(
+                    middle_fea, dim, [3, 3], scope=scope+'forward1_2')
+                forward1_1 += forward1_2
+                forward2_1 = channel_attention(
+                    forward1_1, dim, 4, scope + 'forward_attention2')
+                forward2_2 = slim.conv2d(
+                    down_fea, dim, [3, 3], scope=scope+'forward2_2')
+                forward2_1 += forward2_2
+                backward1_1 = channel_attention(
+                    down_fea, dim, 4, scope + 'backward_attention1')
+                backward1_2 = slim.conv2d(
+                    middle_fea, dim, [3, 3], scope=scope+'backward1_2')
+                backward1_1 += backward1_2
+                backward2_1 = channel_attention(
+                    backward1_1, dim, 4, scope + 'backward_attention2')
+                backward2_2 = slim.conv2d(
+                    up_fea, dim, [3, 3], scope=scope+'backward2_2')
+                backward2_1 += backward2_2
+                out_fea = tf.concat([forward2_1, middle_fea, backward2_1], 3)
+                out_fea = slim.conv2d(
+                    out_fea, dim, [1, 1], scope=scope+'out_fea')
         return out_fea
 
     def average_gradients(self, tower_grads):
@@ -528,7 +534,7 @@ class DEBLUR(object):
 
         summary_writer = tf.summary.FileWriter(
             self.train_dir, sess.graph, flush_secs=30)
-        
+
         if self.load_step is not '0':
             self.load(sess, self.load_dir, step=self.load_step)
 
