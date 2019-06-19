@@ -395,7 +395,6 @@ class DEBLUR(object):
         gpu_options = tf.GPUOptions(allow_growth=True)
         sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                                 log_device_placement=True))
-        self.sess = sess
         sess.run(tf.group(tf.global_variables_initializer(),
                           tf.local_variables_initializer()))
 
@@ -528,17 +527,17 @@ class DEBLUR(object):
 
             # session and thread
             gpu_options = tf.GPUOptions(allow_growth=True)
-            sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 
-            self.sess = sess
+            self.saver = tf.train.Saver(
+                max_to_keep=50, keep_checkpoint_every_n_hours=1)
+
+            sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
+                                                    log_device_placement=True))
 
             sess.run(tf.group(tf.global_variables_initializer(),
                               tf.local_variables_initializer()))
 
-            self.saver = tf.train.Saver(
-                max_to_keep=50, keep_checkpoint_every_n_hours=1)
-            coord = tf.train.Coordinator()
-            tf.train.start_queue_runners(sess=sess, coord=coord)
+            tf.train.start_queue_runners(sess=sess)
 
             # training summary
             summary_op = tf.summary.merge(summaries)
