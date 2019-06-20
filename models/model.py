@@ -582,7 +582,7 @@ class DEBLUR(object):
                     # self.epoch_loss = 0
 
                 # Save the model checkpoint periodically.
-                if step > self.max_steps/2:
+                if step > 30000:
                     if step % 1000 == 0 or step == self.max_steps:
                         checkpoint_path = os.path.join(
                             self.train_dir, 'checkpoints')
