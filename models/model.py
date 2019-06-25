@@ -41,7 +41,7 @@ class DEBLUR(object):
         self.data_size = (len(self.data_list)) // self.batch_size
         self.max_steps = int(self.epoch * self.data_size)
         self.learning_rate = self.args.learning_rate
-        self.load_step = self.args.load_step
+        self.load_step = int(self.args.load_step)
         self.loss_thread = 0.004
         self.min_loss_val = 1
         self.epoch_loss = 0
@@ -686,3 +686,78 @@ class DEBLUR(object):
             if rot:
                 res = np.transpose(res, [1, 0, 2])
             scipy.misc.imsave(os.path.join(path_temp, split_name[-1]), res)
+            
+    def mtest(self, height, width, output_path):
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        test_datalist = open('test_datalist.txt', 'rt').read().splitlines()
+        test_datalist = list(map(lambda x: x.split(' '), test_datalist))
+
+        imgsName = [x[0] for x in test_datalist]
+
+        H, W = height, width
+        inp_chns = 3 if self.args.model == 'color' else 1
+        self.batch_size = 1 if self.args.model == 'color' else 3
+        inputs = tf.placeholder(
+            shape=[self.batch_size, H, W, inp_chns], dtype=tf.float32)
+        outputs, _, _ = self.model_refine(inputs, 'FADNet')
+
+        sess = tf.Session(config=tf.ConfigProto(
+            gpu_options=tf.GPUOptions(allow_growth=True)))
+
+        self.saver = tf.train.Saver()
+        while self.load_step <= 76000:
+            while not os.path.exists(os.path.join(self.train_dir, 'checkpoints', 'deblur.model-' + str(self.load_step)+'.meta')):
+                self.load_step += 1000            
+            self.load(sess, self.train_dir, step=self.load_step)
+
+            for imgName in imgsName:
+                blur = scipy.misc.imread(imgName)
+                split_name = imgName.split('/')
+                path_temp = os.path.join(
+                    output_path, self.model_flag + '_' + self.exp_num + '_' + str(self.load_step), split_name[-3], 'sharp')
+                if not os.path.exists(path_temp):
+                    os.makedirs(path_temp)
+                h, w, _ = blur.shape
+                # make sure the width is larger than the height
+                rot = False
+                if h > w:
+                    blur = np.transpose(blur, [1, 0, 2])
+                    rot = True
+                h = int(blur.shape[0])
+                w = int(blur.shape[1])
+                resize = False
+                if h > H or w > W:
+                    scale = min(1.0 * H / h, 1.0 * W / w)
+                    new_h = int(h * scale)
+                    new_w = int(w * scale)
+                    blur = scipy.misc.imresize(blur, [new_h, new_w], 'bicubic')
+                    resize = True
+                    blurPad = np.pad(
+                        blur, ((0, H - new_h), (0, W - new_w), (0, 0)), 'edge')
+                else:
+                    blurPad = np.pad(
+                        blur, ((0, H - h), (0, W - w), (0, 0)), 'edge')
+                blurPad = np.expand_dims(blurPad, 0)
+                if self.args.model is not 'color':
+                    blurPad = np.transpose(blurPad, (3, 1, 2, 0))
+
+                start = time.time()
+                deblur = sess.run(outputs, feed_dict={inputs: blurPad / 255.0})
+                duration = time.time() - start
+                print('Saving results: %s ... %4.3fs' % (imgName, duration))
+                res = deblur
+                if self.args.model is not 'color':
+                    res = np.transpose(res, (3, 1, 2, 0))
+                res = im2uint8(res[0, :, :, :])
+                # crop the image into original size
+                if resize:
+                    res = res[:new_h, :new_w, :]
+                    res = scipy.misc.imresize(res, [h, w], 'bicubic')
+                else:
+                    res = res[:h, :w, :]
+
+                if rot:
+                    res = np.transpose(res, [1, 0, 2])
+                scipy.misc.imsave(os.path.join(path_temp, split_name[-1]), res)
+            self.load_step += 1000
