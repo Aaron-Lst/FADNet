@@ -16,6 +16,7 @@ import tensorflow.contrib.slim as slim
 from tflearn.layers.conv import global_avg_pool
 
 from util.util import *
+tf.reset_default_graph()
 
 
 class DEBLUR(object):
@@ -624,6 +625,7 @@ class DEBLUR(object):
 
         imgsName = [x[0] for x in test_datalist]
 
+
         H, W = height, width
         inp_chns = 3 if self.args.model == 'color' else 1
         self.batch_size = 1 if self.args.model == 'color' else 3
@@ -686,7 +688,7 @@ class DEBLUR(object):
             if rot:
                 res = np.transpose(res, [1, 0, 2])
             scipy.misc.imsave(os.path.join(path_temp, split_name[-1]), res)
-            
+
     def mtest(self, height, width, output_path):
         if not os.path.exists(output_path):
             os.makedirs(output_path)

@@ -50,6 +50,8 @@ def main(_):
     deblur = model.DEBLUR(args)
     if args.phase == 'test':
         deblur.test(args.height, args.width, args.output_path)
+    elif args.phase == 'mtest':
+        deblur.mtest(args.height, args.width, args.output_path)
     elif args.phase == 'train':
         if deblur.gpu_num > 1:
             deblur.multi_gpu_train()
