@@ -379,7 +379,7 @@ class DEBLUR(object):
     def train(self):
 
         global_step = tf.Variable(
-            initial_value=0 if self.load_step == '0' else int(self.load_step), dtype=tf.int32, trainable=False)
+            initial_value=0 if self.load_step == 0 else self.load_step, dtype=tf.int32, trainable=False)
         self.global_step = global_step
 
         # build model
@@ -412,7 +412,7 @@ class DEBLUR(object):
         summary_op = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(
             self.train_dir, sess.graph, flush_secs=30)
-        if self.load_step is not '0':
+        if self.load_step != 0:
             self.load(sess, self.load_dir, step=self.load_step)
 
         for step in xrange(sess.run(global_step), self.max_steps + 1):
@@ -454,7 +454,7 @@ class DEBLUR(object):
     def multi_gpu_train(self):
         with tf.Graph().as_default(), tf.device('/cpu:0'):
             global_step = tf.Variable(
-                initial_value=0 if self.load_step == '0' else int(self.load_step), dtype=tf.int32, trainable=False)
+                initial_value=0 if self.load_step == 0 else self.load_step, dtype=tf.int32, trainable=False)
             self.global_step = global_step
 
             # learning rate decay
@@ -550,7 +550,7 @@ class DEBLUR(object):
             summary_writer = tf.summary.FileWriter(
                 self.train_dir, sess.graph, flush_secs=30)
 
-            if self.load_step is not '0':
+            if self.load_step != 0 :
                 self.load(sess, self.load_dir, step=self.load_step)
 
             for step in xrange(sess.run(global_step), self.max_steps + 1):
