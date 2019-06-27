@@ -47,7 +47,7 @@ class DEBLUR(object):
         self.min_loss_val = 1
         self.epoch_loss = 0
         self.step_loss_queue = []
-
+        self.bn_params = batch_norm_params()
     def input_producer(self, batch_size=10):
         def read_data():
             img_a = tf.image.decode_image(tf.read_file(tf.string_join(['/home/opt603/high_io_data/GOPRO_Large/train/', self.data_queue[0]])),
@@ -89,9 +89,8 @@ class DEBLUR(object):
     def model_refine(self, inputs, name):
         refine = []
         edge = []
-        bn_params = batch_norm_params()
         with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
-                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=slim.batch_norm, normalizer_params=bn_params,
+                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=slim.batch_norm, normalizer_params=self.bn_params,
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
@@ -233,7 +232,7 @@ class DEBLUR(object):
                 scale = input_x * excitation
             return scale
         with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
-                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=slim.batch_norm, normalizer_params=bn_params,
+                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=slim.batch_norm, normalizer_params=self.bn_params,
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
