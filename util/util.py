@@ -50,7 +50,7 @@ def DenseBlock(x, dim, ksize, scope='de'):
 
 
 def batch_norm_params(is_training=True,
-                      batch_norm_decay=0.997,
+                      batch_norm_decay=0.99,
                       batch_norm_epsilon=1e-5,
                       batch_norm_scale=True):
     batch_norm_params = {

@@ -89,9 +89,9 @@ class DEBLUR(object):
     def model_refine(self, inputs, name):
         refine = []
         edge = []
-        # bn_params = batch_norm_params()
+        bn_params = batch_norm_params()
         with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
-                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=None,
+                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=slim.batch_norm, normalizer_params=bn_params,
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
@@ -233,7 +233,7 @@ class DEBLUR(object):
                 scale = input_x * excitation
             return scale
         with slim.arg_scope([slim.conv2d, slim.conv2d_transpose],
-                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=None,
+                            activation_fn=tf.nn.relu, padding='SAME', normalizer_fn=slim.batch_norm, normalizer_params=bn_params,
                             weights_initializer=tf.contrib.layers.xavier_initializer(
                 uniform=True),
                 biases_initializer=tf.constant_initializer(0.0)):
@@ -500,7 +500,8 @@ class DEBLUR(object):
                             total_loss = tf.add_n(losses, name='total_loss')
 
                             for l in losses + [total_loss]:
-                                loss_name = re.sub('FADNET_tower_[0-9]*/', '', l.op.name)
+                                loss_name = re.sub(
+                                    'FADNET_tower_[0-9]*/', '', l.op.name)
                                 tf.summary.scalar(loss_name, l)
 
                             tf.get_variable_scope().reuse_variables()
@@ -625,7 +626,6 @@ class DEBLUR(object):
 
         imgsName = [x[0] for x in test_datalist]
 
-
         H, W = height, width
         inp_chns = 3 if self.args.model == 'color' else 1
         self.batch_size = 1 if self.args.model == 'color' else 3
@@ -710,7 +710,7 @@ class DEBLUR(object):
         self.saver = tf.train.Saver()
         while self.load_step <= 76000:
             while not os.path.exists(os.path.join(self.train_dir, 'checkpoints', 'deblur.model-' + str(self.load_step)+'.meta')):
-                self.load_step += 1000            
+                self.load_step += 1000
             self.load(sess, self.train_dir, step=self.load_step)
 
             for imgName in imgsName:
