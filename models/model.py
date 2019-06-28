@@ -367,11 +367,15 @@ class DEBLUR(object):
             # ww = 1
             re_loss_total += (re_loss * ww)
             ed_loss_total += (ed_loss * ww)
-            # tf.summary.image(scope + 'refine_' + str(i), im2uint8(refine[i]))
-            # tf.summary.image(scope + 'edge_' + str(i), im2uint8(ed[i]))
+
+            tf.summary.image(scope + 'refine_' + str(i), im2uint8(refine[i]))
+            tf.summary.image(scope + 'edge_' + str(i), im2uint8(ed[i]))
+
         re_loss_total = tf.multiply(re_loss_total, 1.25, name='refine_loss')
         ed_loss_total = tf.multiply(ed_loss_total, 1, name='edge_loss')
-        # tf.summary.image(scope + 'out_', im2uint8(pred))
+
+        tf.summary.image(scope + 'out_', im2uint8(pred))
+
         tf.add_to_collection('losses', re_loss_total)
         tf.add_to_collection('losses', ed_loss_total)
         return tf.add_n(tf.get_collection('losses'), name='total_loss')
@@ -419,7 +423,6 @@ class DEBLUR(object):
 
             start_time = time.time()
 
-            # update G network
             _, loss_total_val = sess.run([train_gnet, self.loss_total])
 
             duration = time.time() - start_time
@@ -478,14 +481,14 @@ class DEBLUR(object):
                         with tf.name_scope('FADNet_tower_%d' % i) as scope:
                             img_in, img_gt, img_ed = batch_queue.dequeue()
 
-                            # tf.summary.image(scope + 'img_in',
-                            #                  im2uint8(img_in))
-                            # tf.summary.image(scope + 'img_gt',
-                            #                  im2uint8(img_gt))
-                            # tf.summary.image(scope + 'img_ed',
-                            #                  im2uint8(img_ed))
-                            # print('img_in, img_gt', 'img_ed', img_in.get_shape(),
-                            #       img_gt.get_shape(), img_ed.get_shape())
+                            tf.summary.image(scope + 'img_in',
+                                             im2uint8(img_in), )
+                            tf.summary.image(scope + 'img_gt',
+                                             im2uint8(img_gt))
+                            tf.summary.image(scope + 'img_ed',
+                                             im2uint8(img_ed))
+                            print('img_in, img_gt', 'img_ed', img_in.get_shape(),
+                                  img_gt.get_shape(), img_ed.get_shape())
 
                             # generator
                             pred, refine, ed = self.model_refine(
@@ -545,7 +548,9 @@ class DEBLUR(object):
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
             # training summary
-            summary_op = tf.summary.merge(summaries)
+            # summary_op = tf.summary.merge(summaries)
+
+            summary_op = tf.summary.merge_all()
 
             summary_writer = tf.summary.FileWriter(
                 self.train_dir, sess.graph, flush_secs=30)
